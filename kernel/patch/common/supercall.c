@@ -399,23 +399,23 @@ static void before(hook_fargs6_t *args, void *udata)
 
     int is_trusted_caller = 0;
     int is_authed = 0;
-    if (has_preset_superkey()) {
-        const char *__user key_user = (const char *__user)syscall_argn(args, 0);
-        
-        char key[MAX_KEY_LEN];
-        long len = compat_strncpy_from_user(key, key_user, MAX_KEY_LEN);
-        if (len <= 0) return;
-        is_authed = !auth_superkey(key);
-        is_trusted_caller = is_authed;
-    }
+    
     if (is_trusted_manager_uid(uid)) {
         is_trusted_caller = 1;
         is_authed = 1;
     } else if (is_su_allow_uid(uid)) {
         is_trusted_caller = 1;
     }
-
     if (!is_trusted_caller) return;
+    
+    if (has_preset_superkey() && !is_authed) {
+        const char *__user key_user = (const char *__user)syscall_argn(args, 0);
+        
+        char key[MAX_KEY_LEN];
+        long len = compat_strncpy_from_user(key, key_user, MAX_KEY_LEN);
+        if (len <= 0) return;
+        is_authed = !auth_superkey(key);
+    }
 
     long ver_xx_cmd = (long)syscall_argn(args, 1);
     long cmd = ver_xx_cmd & 0xFFFF;
